@@ -55,7 +55,6 @@ setup(
     tests_require=test_deps,
     python_requires=">=3.9",
     install_requires=[
-        "cache_decorator",
         "typeguard",
         "tqdm",
         "requests",
