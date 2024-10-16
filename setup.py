@@ -61,6 +61,7 @@ setup(
         "requests",
         "dict_hash",
         "pandas",
+        "fake_useragent",
         "cache_decorator",
     ],
     extras_require=extras,
