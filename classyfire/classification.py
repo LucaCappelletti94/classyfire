@@ -66,12 +66,17 @@ class Compound:
     def from_dict(cls, data: Dict[str, Any]) -> "Compound":
         """Create a Compound from a JSON dictionary."""
 
+        if "inchikey" not in data:
+            raise ValueError(
+                f"InChIKey is required to create a Compound object, provided data: {data}"
+            )
+
         return cls(
             smiles=data["smiles"],
             inchikey=data["inchikey"],
             kingdom=ChemontNode(**data["kingdom"]),
             superclass=ChemontNode(**data["superclass"]),
-            klass=ChemontNode(**data["class"]),
+            klass=ChemontNode(**data["class"]) if data["class"] is not None else None,
             subclass=(
                 ChemontNode(**data["subclass"])
                 if data["subclass"] is not None
@@ -103,7 +108,7 @@ class Compound:
             "inchikey": self.inchikey,
             "kingdom": self.kingdom.to_dict(),
             "superclass": self.superclass.to_dict(),
-            "class": self.klass.to_dict(),
+            "class": self.klass.to_dict() if self.klass else None,
             "subclass": self.subclass.to_dict() if self.subclass else None,
             "intermediate_nodes": [node.to_dict() for node in self.intermediate_nodes],
             "direct_parent": self.direct_parent.to_dict(),

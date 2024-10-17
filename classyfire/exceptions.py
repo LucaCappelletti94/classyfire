@@ -13,6 +13,16 @@ class ClassyFireAPIRequestError(ClassyFireError):
         super().__init__(message)
 
 
+class MultipleRadicalsOrAttachmentPointsNotSupported(ClassyFireError):
+    """Multiple radicals or attachment points not supported exception."""
+
+    def __init__(self, smiles_or_inchikey: str):
+        """Multiple radicals or attachment points not supported exception."""
+        super().__init__(
+            f"Multiple radicals or attachment points not supported by ClassyFire: {smiles_or_inchikey}"
+        )
+
+
 class EmptyInchikeyClassification(ClassyFireError):
     """Empty classification exception."""
 

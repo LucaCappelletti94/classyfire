@@ -15,6 +15,7 @@ from classyfire.exceptions import (
     InvalidSMILES,
     EmptyInchikeyClassification,
     EmptySMILESClassification,
+    MultipleRadicalsOrAttachmentPointsNotSupported,
 )
 from classyfire.utils import (
     is_valid_inchikey,
@@ -141,6 +142,11 @@ class ClassyFire:
             response.raise_for_status()
             response = response.json()
 
+            if "report" in response and any(
+                "multiple radicals" in report.lower() for report in response["report"]
+            ):
+                raise MultipleRadicalsOrAttachmentPointsNotSupported(inchikey)
+
             if not response:
                 if self._behavior_on_empty_classification == "warn":
                     warnings.warn(f"Empty classification for InChIKey: {inchikey}")
@@ -156,11 +162,28 @@ class ClassyFire:
 
             return response
 
-        except requests.exceptions.HTTPError as e:
+        except requests.exceptions.HTTPError as http_error:
+            # Sometimes, when the classification fails, instead of returning an empty
+            # response, the server returns a 404 error. In this case, we should treat
+            # it as an empty classification and raise an EmptyInchikeyClassification
+            # exception.
+            if http_error.response.status_code == 404:
+                if self._behavior_on_empty_classification == "warn":
+                    warnings.warn(f"Empty classification for InChIKey: {inchikey}")
+                elif self._behavior_on_empty_classification == "ignore":
+                    pass
+                elif self._behavior_on_empty_classification in ("retry-last", "raise"):
+                    if self._behavior_on_empty_classification == "retry-last":
+                        warnings.warn(
+                            f"Empty classification for InChIKey: {inchikey}. "
+                            f"Will retry classification at the end of the classification process."
+                        )
+                    raise EmptyInchikeyClassification(inchikey) from http_error
+
             raise ClassyFireAPIRequestError(
                 f"Classification request for InChIKey '{inchikey}' failed "
-                f"with status code {response.status_code}"
-            ) from e
+                f"with status code {http_error.response.status_code}"
+            ) from http_error
         except requests.exceptions.RequestException as e:
             raise ClassyFireAPIRequestError(
                 f"Classification request for InChIKey '{inchikey}' failed"
@@ -197,6 +220,16 @@ class ClassyFire:
             )
         except EmptyInchikeyClassification as empty_inchikey_classification:
             raise EmptySMILESClassification(smiles) from empty_inchikey_classification
+        except (
+            MultipleRadicalsOrAttachmentPointsNotSupported
+        ) as multiple_radicals_or_attachment_points_not_supported:
+            raise MultipleRadicalsOrAttachmentPointsNotSupported(
+                smiles
+            ) from multiple_radicals_or_attachment_points_not_supported
+        except ClassyFireAPIRequestError as classyfire_api_request_error:
+            raise ClassyFireAPIRequestError(
+                f"Classification request for SMILES '{smiles}' failed"
+            ) from classyfire_api_request_error
 
     @typechecked
     def classify_inchikeys(self, inchikeys: Iterable[str]) -> Iterable[Compound]:
