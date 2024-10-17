@@ -2,6 +2,7 @@
 
 from typing import List, Dict
 import argparse
+import os
 import json
 import compress_json
 from classyfire import ClassyFire, Compound
@@ -53,6 +54,11 @@ def build_parser():
     return parser
 
 
+def is_valid_path(path_candidate: str) -> bool:
+    """Check if the provided path is valid."""
+    return os.path.exists(path_candidate) and path_candidate.endswith((".csv", ".tsv", ".ssv"))
+
+
 def main():
     """Main function."""
     parser = build_parser()
@@ -76,6 +82,17 @@ def main():
         else:
             print(json.dumps(compound.to_dict(), indent=2))
         return
+
+
+    # We check that the provided argument is a valid path, or we have
+    # to raise an exception to expain that the argument is not valid as
+    # it does not seem to be neither an InChIKey nor a SMILES or a path
+    # to a CSV (or TSV) file.
+    if not is_valid_path(args.inchikey_or_smiles_or_path):
+        raise ValueError(
+            f"Invalid argument: {args.inchikey_or_smiles_or_path}. "
+            "It should be an InChIKey or a SMILES or a path to a CSV (or TSV or SSV) file."
+        )
 
     separator = args.separator
 
