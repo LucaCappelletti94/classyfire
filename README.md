@@ -8,6 +8,10 @@
 
 A Python package to classify chemical entities using the [ClassyFire API](http://classyfire.wishartlab.com). This package provides a simple interface to retrieve the chemical classification of compounds by their InChIKey or SMILES, which are automatically cached to avoid redundant requests to the ClassyFire API. Caching ensures that repeated queries for the same InChIKey or SMILES are faster and more efficient, not requiring additional network calls or waiting time.
 
+In some relatively rare cases, the ClassyFire API may not be able to classify a compound, and in such cases it will return an empty classification. When this happens, depending on the behaviour selected for the `behavior_on_empty_classification` parameter, the package will either raise an `EmptyInchikeyClassification` or `EmptySMILESClassification` exception or, when you are classifying multiple compounds, it will try again to classify the failed compounds after all other compounds have been classified. This is done by default, as sometimes the APIs may fail to classify a compound but succeed in doing so after a while (which may be several minutes at least).
+
+*While it is unclear why this happens, it is my belief that they run the classifier in such cases, while in all other instances they use a lookup table.*
+
 Furthermore, the package offers a CLI interface to classify InChIKeys or SMILES from the command line, which can be useful for batch processing of chemical entities.
 
 ## Installation
@@ -31,6 +35,8 @@ client: ClassyFire = ClassyFire(
     timeout = 10,
     # Time to wait between requests (in seconds)
     sleep = 5,
+    # What to do when the API returns an empty classification
+    behavior_on_empty_classification="retry-last",
     # Whether to show a loading bar when fetching
     # multiple classifications
     verbose = True
