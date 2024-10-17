@@ -51,6 +51,11 @@ def build_parser():
         action="store_true",
         help="Whether to print verbose output",
     )
+    parser.add_argument(
+        "--short",
+        action="store_true",
+        help="Whether to print short output",
+    )
     return parser
 
 
@@ -72,7 +77,10 @@ def main():
         if args.output is not None:
             compress_json.dump(compound.to_dict(), args.output)
         else:
-            print(json.dumps(compound.to_dict(), indent=2))
+            if args.short:
+                print(compound)
+            else:
+                print(json.dumps(compound.to_dict(), indent=2))
         return
 
     if is_valid_smiles(args.inchikey_or_smiles_or_path):
@@ -80,7 +88,10 @@ def main():
         if args.output is not None:
             compress_json.dump(compound.to_dict(), args.output)
         else:
-            print(json.dumps(compound.to_dict(), indent=2))
+            if args.short:
+                print(compound)
+            else:
+                print(json.dumps(compound.to_dict(), indent=2))
         return
 
 

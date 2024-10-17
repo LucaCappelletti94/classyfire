@@ -1,7 +1,16 @@
 """Submodule for the classification dataclasses."""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+import textwrap
+from typing import List, Dict, Any, Optional, Tuple
+
+# ANSI escape codes for colors
+RESET = "\033[0m"
+BOLD = "\033[1m"
+CYAN = "\033[96m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+BLUE = "\033[94m"
 
 
 @dataclass
@@ -48,7 +57,7 @@ class Compound:
     inchikey: str
     kingdom: ChemontNode
     superclass: ChemontNode
-    klass: ChemontNode
+    klass: Optional[ChemontNode]
     subclass: Optional[ChemontNode]
     intermediate_nodes: List[ChemontNode]
     direct_parent: ChemontNode
@@ -126,3 +135,29 @@ class Compound:
             "predicted_lipidmaps_terms": self.predicted_lipidmaps_terms,
             "classification_version": self.classification_version,
         }
+
+    def __repr__(self) -> str:
+        """Return a concise, human-readable summary of the compound."""
+
+        # Entries for the summary, with color and indentation
+        label_len = len("Description: ")
+        description_wrapped = textwrap.fill(
+            self.description,
+            width=80,
+            subsequent_indent=" " * label_len,
+        )
+        entries: List[Tuple[str, str]] = [
+            (f"{BOLD}{YELLOW}Description{RESET}", description_wrapped),
+            (f"{BOLD}{CYAN}Direct Parent{RESET}", self.direct_parent.name),
+            (f"{BOLD}{GREEN}Kingdom{RESET}", self.kingdom.name),
+            (f"{BOLD}{BLUE}└── Superclass{RESET}", self.superclass.name),
+        ]
+
+        if self.klass:
+            entries.append((f"{BLUE}    └── Class{RESET}", self.klass.name))
+
+        if self.subclass:
+            entries.append((f"{BLUE}        └── Subclass{RESET}", self.subclass.name))
+
+        # Generate the formatted string with colors and indentations
+        return "\n".join([f"{key}: {value}" for key, value in entries])
