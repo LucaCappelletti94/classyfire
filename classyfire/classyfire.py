@@ -24,16 +24,17 @@ from classyfire.utils import (
 from classyfire.classification import Compound
 
 
-def _sleeping_loading_bar(sleep_time: int, reason: str):
+def _sleeping_loading_bar(sleep_time: int, reason: str, verbose: bool):
     """Sleeping loading bar."""
     for _ in trange(
         0,
         int(sleep_time * 1_000),
         100,
         desc=reason,
-        unit="ms",
+        unit="hms",
         leave=False,
         dynamic_ncols=True,
+        disable=not verbose,
     ):
         time.sleep(0.1)
 
@@ -125,7 +126,9 @@ class ClassyFire:
             time_to_sleep = max(
                 0, self._sleep - (time.time() - self._last_request_time)
             )
-            _sleeping_loading_bar(time_to_sleep, "Sleeping before request")
+            _sleeping_loading_bar(
+                time_to_sleep, "Sleeping before request", self._verbose
+            )
             self._last_request_time = time.time()
             response = requests.get(
                 self.build_url(inchikey),
@@ -226,7 +229,7 @@ class ClassyFire:
         if self._behavior_on_empty_classification == "retry-last":
             while to_retry:
                 _sleeping_loading_bar(
-                    self._sleep_between_attempts, "Sleeping before retry"
+                    self._sleep_between_attempts, "Sleeping before retry", self._verbose
                 )
                 new_to_retry: List[Tuple[str, int]] = []
                 for inchikey, attempt in to_retry:
@@ -270,7 +273,7 @@ class ClassyFire:
         if self._behavior_on_empty_classification == "retry-last":
             while to_retry:
                 _sleeping_loading_bar(
-                    self._sleep_between_attempts, "Sleeping before retry"
+                    self._sleep_between_attempts, "Sleeping before retry", self._verbose
                 )
                 new_to_retry: List[Tuple[str, int]] = []
                 for smiles, attempt in to_retry:
@@ -354,7 +357,7 @@ class ClassyFire:
         if self._behavior_on_empty_classification == "retry-last":
             while to_retry:
                 _sleeping_loading_bar(
-                    self._sleep_between_attempts, "Sleeping before retry"
+                    self._sleep_between_attempts, "Sleeping before retry", self._verbose
                 )
                 new_to_retry: List[Tuple[pd.Series, int]] = []
                 for row, attempt in to_retry:
