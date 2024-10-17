@@ -2,19 +2,19 @@
 
 from typing import List, Dict
 import argparse
-import compress_json
 import json
+import compress_json
 from classyfire import ClassyFire, Compound
-from classyfire.utils import is_valid_inchikey
+from classyfire.utils import is_valid_inchikey, is_valid_smiles
 
 
 def build_parser():
     """Build the argument parser."""
     parser = argparse.ArgumentParser(description="ClassyFire CLI")
     parser.add_argument(
-        "inchikey_or_path",
+        "inchikey_or_smiles_or_path",
         type=str,
-        help="InChIKey or path to a CSV (or TSV) file",
+        help="InChIKey or SMILES or path to a CSV (or TSV) file",
     )
     parser.add_argument(
         "--timeout",
@@ -61,8 +61,16 @@ def main():
         timeout=args.timeout, sleep=args.sleep, verbose=args.verbose
     )
 
-    if is_valid_inchikey(args.inchikey_or_path):
-        compound: Compound = classyfire.classify_inchikey(args.inchikey_or_path)
+    if is_valid_inchikey(args.inchikey_or_smiles_or_path):
+        compound: Compound = classyfire.classify_inchikey(args.inchikey_or_smiles_or_path)
+        if args.output is not None:
+            compress_json.dump(compound.to_dict(), args.output)
+        else:
+            print(json.dumps(compound.to_dict(), indent=2))
+        return
+
+    if is_valid_smiles(args.inchikey_or_smiles_or_path):
+        compound: Compound = classyfire.classify_smiles(args.inchikey_or_smiles_or_path)
         if args.output is not None:
             compress_json.dump(compound.to_dict(), args.output)
         else:
@@ -71,15 +79,15 @@ def main():
 
     separator = args.separator
 
-    if args.inchikey_or_path.endswith(".tsv"):
+    if args.inchikey_or_smiles_or_path.endswith(".tsv"):
         separator = "\t"
-    elif args.inchikey_or_path.endswith(".ssv"):
+    elif args.inchikey_or_smiles_or_path.endswith(".ssv"):
         separator = " "
 
     compounds: List[Dict] = [
         {column_name: compound.to_dict() for column_name, compound in compounds.items()}
         for compounds in classyfire.classify_csv(
-            args.inchikey_or_path,
+            args.inchikey_or_smiles_or_path,
             sep=separator,
             header=not args.no_header,
         )

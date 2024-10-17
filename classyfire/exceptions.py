@@ -19,3 +19,11 @@ class InvalidInchiKey(ClassyFireError):
     def __init__(self, inchikey: str):
         """Invalid InChIKey exception."""
         super().__init__(f"Invalid InChIKey: {inchikey}")
+
+
+class InvalidSMILES(ClassyFireError):
+    """Invalid SMILES exception."""
+
+    def __init__(self, smiles: str):
+        """Invalid SMILES exception."""
+        super().__init__(f"Invalid SMILES: {smiles}")

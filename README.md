@@ -6,9 +6,9 @@
 [![downloads](https://pepy.tech/badge/classyfire)](https://pepy.tech/project/classyfire)
 [![Github Actions](https://github.com/LucaCappelletti94/classyfire/actions/workflows/python.yml/badge.svg)](https://github.com/LucaCappelletti94/classyfire/actions/)
 
-A Python package to classify chemical entities using the [ClassyFire API](http://classyfire.wishartlab.com). This package provides a simple interface to retrieve the chemical classification of compounds by their InChIKey, which are automatically cached to avoid redundant requests to the ClassyFire API. Caching ensures that repeated queries for the same InChIKey are faster and more efficient, not requiring additional network calls or waiting time.
+A Python package to classify chemical entities using the [ClassyFire API](http://classyfire.wishartlab.com). This package provides a simple interface to retrieve the chemical classification of compounds by their InChIKey or SMILES, which are automatically cached to avoid redundant requests to the ClassyFire API. Caching ensures that repeated queries for the same InChIKey or SMILES are faster and more efficient, not requiring additional network calls or waiting time.
 
-Furthermore, the package offers a CLI interface to classify InChIKeys from the command line, which can be useful for batch processing of chemical entities.
+Furthermore, the package offers a CLI interface to classify InChIKeys or SMILES from the command line, which can be useful for batch processing of chemical entities.
 
 ## Installation
 
@@ -44,6 +44,13 @@ compound: Compound = client.classify_inchikey(inchikey)
 assert compound.smiles == "CC(=O)OC1=CC=CC=C1C(O)=O"
 assert compound.kingdom.name == "Organic compounds"
 
+smiles: str = "CC(=O)OC1=CC=CC=C1C(O)=O"
+compound: Compound = client.classify_smiles(smiles)
+
+# Access compound details
+assert compound.inchikey == "InChIKey=BSYNRYMUTXBXSQ-UHFFFAOYSA-N"
+assert compound.kingdom.name == "Organic compounds"
+
 # And you can execute multiple classifications in sequence
 inchikeys = [
     "BSYNRYMUTXBXSQ-UHFFFAOYSA-N",
@@ -55,11 +62,23 @@ for compound in client.classify_inchikeys(inchikeys):
     assert isinstance(compound, Compound)
     assert compound.smiles is not None
 
+# Analogously, you can classify multiple SMILES
+
+smiles_list = [
+    "CC(=O)OC1=CC=CC=C1C(O)=O",
+    "[H][C@@]12OC3=C(OC)C=CC4=C3[C@@]11CCN(C)[C@]([H])(C4)[C@]1([H])C=C[C@@H]2O",
+]
+
+# The method returns an iterable of Compound instances
+for compound in client.classify_smiles_list(smiles_list):
+    assert isinstance(compound, Compound)
+    assert compound.inchikey is not None
+
 ```
 
 ### Classify CSV or TSV files
 
-Finally, it is possible to classify a CSV or TSV file containing InChIKeys using the method `classify_csv`, which will yeald a generator of dictionaries with as keys the column names of the InChIKeys and as values the corresponding classifications.
+Finally, it is possible to classify a CSV or TSV file containing InChIKeys and/or SMILES using the method `classify_csv`, which will yeald a generator of dictionaries with as keys the column names of the InChIKeys and/or SMILES and as values the corresponding classifications.
 
 ```python
 import pandas as pd
@@ -82,7 +101,7 @@ csv: pd.DataFrame = pd.DataFrame({
     "AnotherInChIKey": [
         "BSYNRYMUTXBXSQ-UHFFFAOYSA-N",
         "YQEZLKZALYSWHR-UHFFFAOYSA-N",
-    ]
+    ],
 })
 
 # We save the DataFrame to a CSV file so that we can
@@ -126,12 +145,38 @@ which will output to stdout the classification of the InChIKey:
 }
 ```
 
-Given a CSV file containing InChIKeys, the CLI interface can be used to classify all InChIKeys in the file.
+To classify a single SMILES, use the following command:
 
-| InChIKey1                           | InChIKey2                           | Kebab | Pizza |
-|-------------------------------------|-------------------------------------|-------|-------|
-| OROGSEYTTFOCAN-DNJOTXNNSA-N         | OROGSEYTTFOCAN-DNJOTXNNSA-N         | 1     | 2     |
-| YQEZLKZALYSWHR-UHFFFAOYSA-N         | OROGSEYTTFOCAN-DNJOTXNNSA-N         | 3     | 4     |
+```bash
+classyfire "CC(=O)OC1=CC=CC=C1C(O)=O"
+```
+
+which will output to stdout the classification of the SMILES:
+
+```json
+{
+  "smiles": "CC(=O)OC1=CC=CC=C1C(O)=O",
+  "inchikey": "InChIKey=BSYNRYMUTXBXSQ-UHFFFAOYSA-N",
+  "kingdom": {
+    "name": "Organic compounds",
+    "description": "Compounds that contain at least one carbon atom, excluding isocyanide/cyanide and their non-hydrocarbyl derivatives, thiophosgene, carbon diselenide, carbon monosulfide, carbon disulfide, carbon subsulfide, carbon monoxide, carbon dioxide, Carbon suboxide, and dicarbon monoxide.",
+    "chemont_id": "CHEMONTID:0000000",
+    "url": "http://classyfire.wishartlab.com/tax_nodes/C0000000"
+  },
+  "...": "...",
+  "predicted_lipidmaps_terms": [
+    "Dicarboxylic acids (FA0117)"
+  ],
+  "classification_version": "2.1"
+}
+```
+
+Given a CSV file containing InChIKeys and/or SMILES, the CLI interface can be used to classify all InChIKeys and/or SMILES in the file.
+
+| InChIKey1                           | InChIKey2                           | Kebab | Pizza | SMILES1                  |
+|-------------------------------------|-------------------------------------|-------|-------|--------------------------|
+| OROGSEYTTFOCAN-DNJOTXNNSA-N         | OROGSEYTTFOCAN-DNJOTXNNSA-N         | 1     | 2     | CC(=O)OC1=CC=CC=C1C(O)=O |
+| YQEZLKZALYSWHR-UHFFFAOYSA-N         | OROGSEYTTFOCAN-DNJOTXNNSA-N         | 3     | 4     | CC(=O)OC1=CC=CC=C1C(O)=O |
 
 To classify a CSV file containing InChIKeys, use the following command:
 

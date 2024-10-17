@@ -8,8 +8,16 @@ from fake_useragent import UserAgent
 from cache_decorator import Cache
 from tqdm.auto import tqdm
 import pandas as pd
-from classyfire.exceptions import InvalidInchiKey, ClassyFireAPIRequestError
-from classyfire.utils import is_valid_inchikey
+from classyfire.exceptions import (
+    InvalidInchiKey,
+    ClassyFireAPIRequestError,
+    InvalidSMILES,
+)
+from classyfire.utils import (
+    is_valid_inchikey,
+    is_valid_smiles,
+    convert_smiles_to_inchikey,
+)
 from classyfire.classification import Compound
 
 
@@ -97,6 +105,22 @@ class ClassyFire:
         )
 
     @typechecked
+    def classify_smiles(self, smiles: str) -> Compound:
+        """Get the classification of a chemical entity.
+
+        Parameters
+        ----------
+        smiles : str
+            smiles of the chemical entity
+        """
+        if not is_valid_smiles(smiles):
+            raise InvalidSMILES(smiles)
+
+        return Compound.from_dict(
+            self._classify_inchikey(convert_smiles_to_inchikey(smiles)),
+        )
+
+    @typechecked
     def classify_inchikeys(self, inchikeys: Sequence[str]) -> Iterable[Compound]:
         """Get the classification of a list of chemical entities.
 
@@ -115,6 +139,26 @@ class ClassyFire:
             disable=not self._verbose,
         ):
             yield self.classify_inchikey(inchikey)
+
+    @typechecked
+    def classify_smiles_list(self, smiles_list: Sequence[str]) -> Iterable[Compound]:
+        """Get the classification of a list of chemical entities.
+
+        Parameters
+        ----------
+        smiles_list : Sequence[str]
+            smiles of the chemical entities
+        """
+        for smiles in tqdm(
+            smiles_list,
+            desc="Classifying SMILES",
+            unit="SMILES",
+            unit_scale=True,
+            leave=False,
+            dynamic_ncols=True,
+            disable=not self._verbose,
+        ):
+            yield self.classify_smiles(smiles)
 
     @typechecked
     def classify_csv(
@@ -138,7 +182,7 @@ class ClassyFire:
 
         for row in tqdm(
             csv_reader,
-            desc="Classifying InChIKeys",
+            desc="Classifying InChIKeys and/or SMILES",
             unit="row",
             unit_scale=True,
             leave=False,
@@ -146,17 +190,22 @@ class ClassyFire:
             disable=not self._verbose,
         ):
             yield {
-                column: self.classify_inchikey(candidate_inchikey)
-                for column, candidate_inchikey in row.iloc[0].items()
-                if isinstance(candidate_inchikey, str)
-                and is_valid_inchikey(candidate_inchikey)
+                column: (
+                    self.classify_inchikey(candidate_inchikey_or_smiles)
+                    if is_valid_inchikey(candidate_inchikey_or_smiles)
+                    else self.classify_smiles(candidate_inchikey_or_smiles)
+                )
+                for column, candidate_inchikey_or_smiles in row.iloc[0].items()
+                if isinstance(candidate_inchikey_or_smiles, str)
+                and (
+                    is_valid_inchikey(candidate_inchikey_or_smiles)
+                    or is_valid_smiles(candidate_inchikey_or_smiles)
+                )
             }
 
     @typechecked
-    def classify_df(
-        self, df: pd.DataFrame
-    ) -> Iterable[Dict[str, Compound]]:
-        """Classify a pandas DataFrame containing InChIKeys."""
+    def classify_df(self, df: pd.DataFrame) -> Iterable[Dict[str, Compound]]:
+        """Classify a pandas DataFrame containing InChIKeys and/or SMILES."""
 
         for _, row in tqdm(
             df.iterrows(),
@@ -169,8 +218,15 @@ class ClassyFire:
             disable=not self._verbose,
         ):
             yield {
-                column: self.classify_inchikey(candidate_inchikey)
-                for column, candidate_inchikey in row.items()
-                if isinstance(candidate_inchikey, str)
-                and is_valid_inchikey(candidate_inchikey)
+                column: (
+                    self.classify_inchikey(candidate_inchikey_or_smiles)
+                    if is_valid_inchikey(candidate_inchikey_or_smiles)
+                    else self.classify_smiles(candidate_inchikey_or_smiles)
+                )
+                for column, candidate_inchikey_or_smiles in row.items()
+                if isinstance(candidate_inchikey_or_smiles, str)
+                and (
+                    is_valid_inchikey(candidate_inchikey_or_smiles)
+                    or is_valid_smiles(candidate_inchikey_or_smiles)
+                )
             }

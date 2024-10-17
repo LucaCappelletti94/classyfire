@@ -62,6 +62,7 @@ setup(
         "pandas",
         "fake_useragent",
         "cache_decorator",
+        "rdkit"
     ],
     extras_require=extras,
     entry_points={
