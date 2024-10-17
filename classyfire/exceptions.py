@@ -13,6 +13,22 @@ class ClassyFireAPIRequestError(ClassyFireError):
         super().__init__(message)
 
 
+class EmptyInchikeyClassification(ClassyFireError):
+    """Empty classification exception."""
+
+    def __init__(self, inchikey: str):
+        """Empty classification exception."""
+        super().__init__(f"Empty classification for InChIKey: {inchikey}")
+
+
+class EmptySMILESClassification(ClassyFireError):
+    """Empty classification exception."""
+
+    def __init__(self, smiles: str):
+        """Empty classification exception."""
+        super().__init__(f"Empty classification for SMILES: {smiles}")
+
+
 class InvalidInchiKey(ClassyFireError):
     """Invalid InChIKey exception."""
 
