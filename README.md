@@ -177,6 +177,24 @@ which will output to stdout the classification of the SMILES:
 }
 ```
 
+If you are only interested in getting the gist of the classification, you can use the `--short` flag, which will output a selection of the most relevant fields:
+
+```bash
+classyfire "CC(=O)OC1=CC=CC=C1C(O)=O" --short
+```
+
+which will output:
+
+```bash
+Description: This compound belongs to the class of organic compounds known as acylsalicylic
+             acids. These are o-acylated derivatives of salicylic acid.
+Direct Parent: Acylsalicylic acids
+Kingdom: Organic compounds
+└── Superclass: Benzenoids
+    └── Class: Benzene and substituted derivatives
+        └── Subclass: Benzoic acids and derivatives
+```
+
 Given a CSV file containing InChIKeys and/or SMILES, the CLI interface can be used to classify all InChIKeys and/or SMILES in the file.
 
 | InChIKey1                           | InChIKey2                           | Kebab | Pizza | SMILES1                  |
